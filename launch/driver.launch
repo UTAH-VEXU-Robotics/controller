@@ -1,0 +1,5 @@
+<launch>
+    <node pkg="driver" type="logicModels.py" name="logic_models" output="screen"/>
+    <node pkg="driver" type="displayModels.py" name="display_models" output="screen"/>
+    <node pkg="driver" type="costModels.py" name="cost_models" output="screen"/>
+</launch>
