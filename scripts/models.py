@@ -1,13 +1,16 @@
 #!/usr/bin/env python
 import roslib
 import rospy
+from rospy import Time
 import numpy
 import time
 import math
 from gazebo_msgs.msg import ModelState
-from geometry_msgs.msg import Pose,Twist
-from std_msgs.msg import String, Float32, ColorRGBA, Bool, Int8, Int16
+from geometry_msgs.msg import Pose,Twist,Point
+from std_msgs.msg import String, Float32, ColorRGBA, Bool, Int8, Int16, Header, Int32
 from driver.msg import Model, Models, Type, Types, Zone, Zones, ChangeUpGoal, ChangeUpGoals, ChangeUpField
+from visualization_msgs.msg import Marker, MarkerArray
+
 
 class Config:
     def findType(self,name):
@@ -323,212 +326,108 @@ class Config:
         self.field.distanceFromRobot = []
 
 def main():
+    print("models")
+    rospy.init_node('models')
 
     main.config = Config()
-    main.models = main.config.models
-    main.zones = main.config.zones
-    main.types = main.config.types
-    main.field = main.config.field
+    # publisher objects
+    main.types = Types()
+    main.zones = Zones()
+    main.models = Models()
 
-    print("logic models")
-    rospy.init_node('logic_models')
+    def modelsCallback(models):
+        #        print("zonesCallback")
+        main.models = models
 
-    typesPub = rospy.Publisher('/field/types', Types,   queue_size=3)
-    zonesPub = rospy.Publisher('/field/zones', Zones,   queue_size=3)
-    modelPub = rospy.Publisher('/field/models', Models, queue_size=3)
-    fieldPub = rospy.Publisher('/field/field', ChangeUpField, queue_size=3)
+    rospy.Subscriber("/field/models", Models, modelsCallback)
 
-    main.gazeboBool = False
-    main.lastGazeboTime = rospy.Time.now()# - rospy.Duration(5)
-    print(main.lastGazeboTime)
+    def zonesCallback(zones):
+        #        print("zonesCallback")
+        main.zones = zones
 
-    def gazeboCallback(imodels):
-        main.gazeboBool = True
-        main.lastGazeboTime = rospy.Time.now()
-        main.models = imodels
+    rospy.Subscriber("/field/zones", Zones, zonesCallback)
 
-    def modelsCallback(imodels):
-        if(main.gazeboBool):
-            if( rospy.Time.now() - main.lastGazeboTime > rospy.Duration(10) ):
-                main.gazeboBool = False
+    def typesCallback(types):
+        #        print("typesCallback")
+        main.types = types
 
-#        if not main.gazeboBool:
-#            main.models = main.config.imodels
+    rospy.Subscriber("/field/types", Types, typesCallback)
 
-    rospy.Subscriber('/gazebo/get_field', Models, gazeboCallback)#(types, zones, models, typesPub, zonesPub, modelPub))
-    rospy.Subscriber('/field/new_models', Models, modelsCallback)#(types, zones, models, typesPub, zonesPub, modelPub))
+    pub = rospy.Publisher('/visualization_marker_array', MarkerArray,   queue_size=3)
 
-    redInt = Int8()
-    redInt.data = 1
-    blueInt = Int8()
-    blueInt.data = -1
-    noneInt = Int8()
-    noneInt.data = 0
+
+    # Two dimensional rotation
+    # returns coordinates in a tuple (x,y)
+    def rotate(x, y, r):
+        rx = (x*math.cos(r)) - (y*math.sin(r))
+        ry = (y*math.cos(r)) + (x*math.sin(r))
+        return (rx, ry)
 
     while not rospy.is_shutdown():
         try:
-            # reset zone models
-            for zone in main.zones.zones:
-                for model in zone.models.models:
-                    zone.models.models.pop()
+            main.markers = MarkerArray()
+            main.id = 0
 
-            # reset goal modelNames and modelColors
-            for goal in main.field.goals.goals:
-                goal.modelNames = []
-                goal.modelColors = []
-                goal.distanceFromRobot = main.config.distanceFromRobot
-
-            # reset field points
-            main.config.redPoints.data = 0
-            main.config.bluePoints.data = 0
-            main.field.goalsColor = []
-            main.field.modelNames = []
-            main.field.modelColors = []
-            main.field.distanceFromRobot = []
-
-            # recalculate the zone and goal in models
             for model in main.models.models:
-                model.zone = ''
-                for zone in main.zones.zones:
-                    zoneType = main.config.findType(zone.type)
-                    if(zoneType.shape == 'circle'):
-                        if(main.config.inCircle(float(model.pose.position.x),
-                                    float(model.pose.position.y),
-                                    float(zone.x1.data),
-                                    float(zone.y1.data),
-                                    float(zoneType.radius.data))):
-                            model.zone = zone.name
-                if(model.zone == ''):
-                    model.zone = 'field'
+                if(main.config.findType(model.type).name == "ball"):
+                    ball = Marker()
+                    ball.header.frame_id = "world"
+                    ball.header.stamp = Time.now()
+                    ball.ns = "change_up"
+                    ball.id = main.id
+                    ball.type = 2
+                    ball.action = 0
+                    ball.pose = model.pose
+                    ball.scale.x = 0.08001*2
+                    ball.scale.y = 0.08001*2
+                    ball.scale.z = 0.08001*2
+                    ball.color = model.color
+                    main.id += 1
+                    main.markers.markers.append(ball)
 
-                # add models to zone
-                main.config.findZone(model.zone).models.models.append(model)
+#            for zone in main.zones.zones:
+#                if(zone.type == 'goal'):
+#                    goal = Marker()
+#                    goal.header.frame_id = "world"
+#                    goal.header.stamp = Time.now()
+#                    goal.ns = "change_up"
+#                    goal.id = main.id
+#                    goal.type = 3
+#                    goal.action = 0
+#                    goal.pose = Pose()
+#                    goal.pose.position.x = zone.x1.data
+#                    goal.pose.position.y = zone.y1.data
+#                    goal.scale.x = main.config.findType(zone.type).radius.data * 2
+#                    goal.scale.y = main.config.findType(zone.type).radius.data * 2
+#                    goal.scale.z = .1
+#                    goal.color = zone.color
+#                    for i in range(1,5):
+#                        ipoint = rotate(0.001,0.001,2*math.pi/i)
+#                        point = Point()
+#                        point.x = ipoint[0]
+#                        point.y = ipoint[1]
+#                        point.z = 0
+#                        goal.points.append(point)
+#                    main.id += 1
+#                    main.markers.markers.append(goal)
 
-            # arrange zone models in order of height
-            for zone in main.zones.zones:
-                zone.models.models = sorted(zone.models.models, key=lambda model: model.pose.position.z)
-                if(zone.name != 'field'):
-                    # add models to goal (if the zone is not a field)
-                    goal = main.config.findGoalInField(zone.name)
 
-                    actualDistanceFromRobot = Float32()
-                    actualDistanceFromRobot.data = main.config.distBetweenPoints(
-                        (main.config.findZone(goal.zoneName).x1.data, main.config.findZone(goal.zoneName).y1.data),
-                        (main.config.findModel(main.config.imodels[0][3]).pose.position.x, main.config.findModel(main.config.imodels[0][3]).pose.position.y)
-                    )
+#                    point = Point()
+#                    point.x = model.pose.position.x
+#                    point.y = model.pose.position.y
+#                    point.z = model.pose.position.z
+##                    main.balls.colors.append(main.config.blue)
+#                    main.balls.points.append(point)
 
-#                    print(findModel(imodels[0][3]).pose)
-#                    print(goal.zoneName,(findZone(goal.zoneName).x1.data, findZone(goal.zoneName).y1.data),
-#                        (findModel(imodels[0][3]).pose.position.x, findModel(imodels[0][3]).pose.position.y))
-#                    print(zone.name,actualDistanceFromRobot)
 
-                    goal.distanceFromRobot = actualDistanceFromRobot
+            pub.publish(main.markers)
+#            pub.publish(main.balls)
 
-                    for model in zone.models.models:
-                        if(model.zone == zone.name):
-                            #if(len(goal.modelNames)>0):
-                            goal.modelNames.append(model.name)
-
-                            if(model.color == main.config.red):
-                                main.config.redPoints.data += 1
-                                goal.modelColors.append(redInt)
-                            elif(model.color == main.config.blue):
-                                main.config.bluePoints.data += 1
-                                goal.modelColors.append(blueInt)
-                elif(zone.name == 'field'):
-                    for model in zone.models.models:
-                        if (model.zone == zone.name):
-                            # if(len(goal.modelNames)>0):
-                            main.field.modelNames.append(model.name)
-
-                            if (model.color == main.config.red):
-                                main.field.modelColors.append(redInt)
-                            elif (model.color == main.config.blue):
-                                main.field.modelColors.append(blueInt)
-
-                            actualDistanceFromRobot = Float32()
-                            actualDistanceFromRobot.data = main.config.distBetweenPoints(
-                                (model.pose.position.x, model.pose.position.y),
-                                (main.config.findModel(main.config.imodels[0][3]).pose.position.x, main.config.findModel(main.config.imodels[0][3]).pose.position.y)
-                            )
-
-                            main.field.distanceFromRobot.append(actualDistanceFromRobot)
-
-            fieldColors = [
-                [blueInt,blueInt,redInt],
-                [blueInt,noneInt,redInt],
-                [blueInt, redInt,redInt],
-            ]
-
-            fieldGoals = [
-                [main.field.goals.goals[0], main.field.goals.goals[1], main.field.goals.goals[2]],
-                [main.field.goals.goals[3], main.field.goals.goals[4], main.field.goals.goals[5]],
-                [main.field.goals.goals[6], main.field.goals.goals[7], main.field.goals.goals[8]],
-            ]
-
-            for x in range(len(fieldColors)):
-                for y in range(len(fieldColors[0])):
-                    goal = fieldGoals[x][y]
-                    num = noneInt
-#                    print(fieldGoals)
-#                    print(len(goal.modelColors))
-                    if(len(goal.modelColors)>0):
-                        color = main.config.findGoalInField(goal.zoneName).modelColors[-1]
-                        if(color == redInt):
-                            num = redInt
-                        elif(color == blueInt):
-                            num = blueInt
-#                        print(x,y,color)
-                    fieldColors[x][y] = num
-
-            goal_rows = [
-                #horizontal
-                [[0,0], [0,1], [0,2]],
-                [[1,0], [1,1], [1,2]],
-                [[2,0], [2,1], [2,2]],
-
-                #vertical
-                [[0,0], [1,0], [2,0]],
-                [[0,1], [1,1], [2,1]],
-                [[0,2], [1,2], [2,2]],
-
-                #diagonal
-                [[0,0], [1,1], [2,2]],
-                [[2,0], [1,1], [0,2]],
-            ]
-
-#            print(fieldColors)
-#            print(goal_rows)
-
-            for i in range(0,len(goal_rows)):
-                sum = fieldColors[goal_rows[i][0][0]][goal_rows[i][0][1]].data + \
-                      fieldColors[goal_rows[i][1][0]][goal_rows[i][1][1]].data + \
-                      fieldColors[goal_rows[i][2][0]][goal_rows[i][2][1]].data
-
-                if(sum == 3):
-                    main.config.redPoints.data += 6
-                    main.field.goalsColor.append(redInt)
-                elif(sum == -3):
-                    main.config.bluePoints.data += 6
-                    main.field.goalsColor.append(blueInt)
-                else:
-                    main.field.goalsColor.append(noneInt)
-
-            main.field.redPoints = main.config.redPoints
-            main.field.bluePoints = main.config.bluePoints
-
-#            print(main.field)
-
-            fieldPub.publish(main.field)
-            typesPub.publish(main.types)
-            zonesPub.publish(main.zones)
-            modelPub.publish(main.models)
 
             time.sleep(.25)
 
-
         except rospy.ROSInterruptException:
-            print("failed to display models")
+            print("failed to models")
 
 if __name__ == '__main__':
     main()
