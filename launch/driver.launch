@@ -2,6 +2,6 @@
 
     <node pkg="driver" type="logicModels.py" name="logic_models2" output="screen"/>
     <node pkg="driver" type="models.py" name="models2" output="screen"/>
-    <node pkg="driver" type="costModels.py" name="cost_models" output="screen"/>
+    <node pkg="driver" type="basicDriver.py" name="basic_driver" output="screen"/>
 
 </launch>

@@ -181,7 +181,7 @@ catkin_install_python(PROGRAMS
   scripts/fakeGazebo.py
   scripts/models.py
   scripts/costModels.py
-#  scripts/config/modelsConfig.py
+  scripts/basicDriver.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

@@ -10,7 +10,7 @@ from geometry_msgs.msg import Pose,Twist,Point
 from std_msgs.msg import String, Float32, ColorRGBA, Bool, Int8, Int16, Header, Int32
 from driver.msg import Model, Models, Type, Types, Zone, Zones, ChangeUpGoal, ChangeUpGoals, ChangeUpField
 from visualization_msgs.msg import Marker, MarkerArray
-
+from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
 class Config:
     def findType(self,name):
@@ -326,14 +326,17 @@ class Config:
         self.field.distanceFromRobot = []
 
 def main():
-    print("models")
-    rospy.init_node('models')
 
     main.config = Config()
-    # publisher objects
+
     main.types = Types()
     main.zones = Zones()
     main.models = Models()
+    main.field = ChangeUpField()
+
+    print("basic_driver")
+    rospy.init_node('basic_driver')
+
 
     def modelsCallback(models):
         #        print("zonesCallback")
@@ -353,76 +356,70 @@ def main():
 
     rospy.Subscriber("/field/types", Types, typesCallback)
 
-    pub = rospy.Publisher('/visualization_marker_array', MarkerArray,   queue_size=3)
+    def fieldCallback(field):
+        #        print("typesCallback")
+        main.field = field
 
+    rospy.Subscriber("/field/field", ChangeUpField, fieldCallback)
 
-    # Two dimensional rotation
-    # returns coordinates in a tuple (x,y)
-    def rotate(x, y, r):
-        rx = (x*math.cos(r)) - (y*math.sin(r))
-        ry = (y*math.cos(r)) + (x*math.sin(r))
-        return (rx, ry)
+    pub = rospy.Publisher('/field/new_models', Models, queue_size=3)
+
+    def moveRobotToPoint(x,y,goalX,goalY):
+        for model in main.models.models:
+            if model.name == "robot":
+
+                model.pose.position.x = x
+                model.pose.position.y = y
+
+                myradians = math.atan2(goalY-model.pose.position.y, goalX-model.pose.position.x)
+                (roll,pitch,yaw) = euler_from_quaternion([model.pose.orientation.x,model.pose.orientation.y,model.pose.orientation.z,model.pose.orientation.w])
+                yaw = myradians
+                quat = quaternion_from_euler(roll,pitch,yaw)
+
+                model.pose.orientation.x = quat[0]
+                model.pose.orientation.y = quat[1]
+                model.pose.orientation.z = quat[2]
+                model.pose.orientation.w = quat[3]
+
+                break
+
+        pub.publish(main.models)
+
+    def moveRobotToGoal(goalX,goalY,isAbsolute=False):
+        for model in main.models.models:
+            if model.name == "robot":
+                if (goalX<=.1 and goalX>=-.1) and (goalY<=.1 and goalY>=-.1) or isAbsolute:
+                    x = goalX + .2 * 1.64152449588 * numpy.sign(model.pose.position.x)
+                    y = goalY + .2 * 1.64152449588 * numpy.sign(model.pose.position.y)
+                else:
+                    x = goalX * .8
+                    y = goalY * .8
+
+                moveRobotToPoint(x,y,goalX,goalY)
 
     while not rospy.is_shutdown():
         try:
-            main.markers = MarkerArray()
-            main.id = 0
 
-            for model in main.models.models:
-                if(main.config.findType(model.type).name == "ball"):
-                    ball = Marker()
-                    ball.header.frame_id = "world"
-                    ball.header.stamp = Time.now()
-                    ball.ns = "change_up"
-                    ball.id = main.id
-                    ball.type = 2
-                    ball.action = 0
-                    ball.pose = model.pose
-                    ball.scale.x = 0.08001*2
-                    ball.scale.y = 0.08001*2
-                    ball.scale.z = 0.08001*2
-                    ball.color = model.color
-                    main.id += 1
-                    main.markers.markers.append(ball)
-
-#            for zone in main.zones.zones:
-#                if(zone.type == 'goal'):
-#                    goal = Marker()
-#                    goal.header.frame_id = "world"
-#                    goal.header.stamp = Time.now()
-#                    goal.ns = "change_up"
-#                    goal.id = main.id
-#                    goal.type = 3
-#                    goal.action = 0
-#                    goal.pose = Pose()
-#                    goal.pose.position.x = zone.x1.data
-#                    goal.pose.position.y = zone.y1.data
-#                    goal.scale.x = main.config.findType(zone.type).radius.data * 2
-#                    goal.scale.y = main.config.findType(zone.type).radius.data * 2
-#                    goal.scale.z = .1
-#                    goal.color = zone.color
-#                    for i in range(1,5):
-#                        ipoint = rotate(0.001,0.001,2*math.pi/i)
-#                        point = Point()
-#                        point.x = ipoint[0]
-#                        point.y = ipoint[1]
-#                        point.z = 0
-#                        goal.points.append(point)
-#                    main.id += 1
-#                    main.markers.markers.append(goal)
-
-
-#                    point = Point()
-#                    point.x = model.pose.position.x
-#                    point.y = model.pose.position.y
-#                    point.z = model.pose.position.z
-##                    main.balls.colors.append(main.config.blue)
-#                    main.balls.points.append(point)
-
-
-            pub.publish(main.markers)
-#            pub.publish(main.balls)
-
+    #            for zone in main.zones.zones:
+    #                #if(robot has no balls):
+    #                #   ball = findBestBall()
+    #                if(zone.models.models != Models()):
+    #                    #ballFromIntakeInGoal()
+    #                    break
+    #                else:
+    #                    goalClean = True
+    #                    for model in zone.models.models:
+    #                        if(model.color != main.config.blue):
+    #                            goalClean = False
+    #                    if(goalClean):
+    #                        #descore ball from goal
+    #                        #put ball from intake in goal
+    #                        print(goalClean)
+    #                    else:
+    #                        goalClean = True
+    #                        for model in zone.models.models:
+    #                            if(model.color != main.config.blue):
+    #                                goalClean = False
 
             time.sleep(.25)
 

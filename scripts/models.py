@@ -5,12 +5,13 @@ from rospy import Time
 import numpy
 import time
 import math
+from math import cos, sin, pi
 from gazebo_msgs.msg import ModelState
 from geometry_msgs.msg import Pose,Twist,Point
 from std_msgs.msg import String, Float32, ColorRGBA, Bool, Int8, Int16, Header, Int32
 from driver.msg import Model, Models, Type, Types, Zone, Zones, ChangeUpGoal, ChangeUpGoals, ChangeUpField
 from visualization_msgs.msg import Marker, MarkerArray
-
+from tf.transformations import euler_from_quaternion, quaternion_from_euler
 
 class Config:
     def findType(self,name):
@@ -355,18 +356,23 @@ def main():
 
     pub = rospy.Publisher('/visualization_marker_array', MarkerArray,   queue_size=3)
 
-
-    # Two dimensional rotation
-    # returns coordinates in a tuple (x,y)
-    def rotate(x, y, r):
-        rx = (x*math.cos(r)) - (y*math.sin(r))
-        ry = (y*math.cos(r)) + (x*math.sin(r))
-        return (rx, ry)
+    def point_on_circle(ix,iy,angle,radius):
+        '''
+            Finding the x,y coordinates on circle, based on given angle
+        '''
+        #center of circle, angle in degree and radius of circle
+        x = ix + (radius * cos(angle))
+        y = iy + (radius * sin(angle))
+        return (x,y)
 
     while not rospy.is_shutdown():
         try:
             main.markers = MarkerArray()
             main.id = 0
+
+#            for model in main.models.models:
+#                if(model.name == "robot"):
+#                    print model.pose
 
             for model in main.models.models:
                 if(main.config.findType(model.type).name == "ball"):
@@ -384,6 +390,36 @@ def main():
                     ball.color = model.color
                     main.id += 1
                     main.markers.markers.append(ball)
+                elif(main.config.findType(model.type).name == "robot"):
+#                    print("robot")
+                    robot = Marker()
+                    robot.header.frame_id = "map"
+                    robot.header.stamp = Time.now()
+                    robot.ns = "change_up"
+#                    print(main.id)
+                    robot.id = main.id
+                    robot.type = 0
+                    robot.action = 0
+                    robot.pose = Pose()
+                    robot.scale.x = .02 + .01
+                    robot.scale.y = .05 + .01
+                    robot.scale.z = .02 + .01
+                    robot.color = main.config.black
+                    point1 = Point()
+                    point1.x = model.pose.position.x
+                    point1.y = model.pose.position.y
+                    point1.z = model.pose.position.z
+                    robot.points.append(point1)
+                    point2 = Point()
+                    euler = euler_from_quaternion([model.pose.orientation.x,model.pose.orientation.y,model.pose.orientation.z,model.pose.orientation.w])
+                    pointOnCircle = point_on_circle(point1.x,point1.y,euler[2],.2)
+                    point2.x = pointOnCircle[0]
+                    point2.y = pointOnCircle[1]
+                    point2.z = model.pose.position.z
+                    robot.points.append(point2)
+#                    print(robot.points)
+                    main.id += 1
+                    main.markers.markers.append(robot)
 
 #            for zone in main.zones.zones:
 #                if(zone.type == 'goal'):
@@ -421,6 +457,11 @@ def main():
 
 
             pub.publish(main.markers)
+
+#            for marker in main.markers.markers:
+#                if marker.id == 0:
+#                    print marker
+
 #            pub.publish(main.balls)
 
 

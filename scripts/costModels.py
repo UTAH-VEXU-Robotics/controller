@@ -223,8 +223,6 @@ def main():
                                 task.cost = Float32(task.cost.data + action.cost.data)
                                 task.reward = Int16(task.reward.data + action.reward.data)
 
-
-
 #                            print(task)
 #                    task.actions.actions = sorted(task.actions.actions, key=lambda action: action.reward)
                     main.tasks.tasks.append(task)

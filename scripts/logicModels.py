@@ -352,8 +352,8 @@ def main():
             if( rospy.Time.now() - main.lastGazeboTime > rospy.Duration(10) ):
                 main.gazeboBool = False
 
-#        if not main.gazeboBool:
-#            main.models = main.config.imodels
+        if not main.gazeboBool:
+            main.models = imodels
 
     rospy.Subscriber('/gazebo/get_field', Models, gazeboCallback)#(types, zones, models, typesPub, zonesPub, modelPub))
     rospy.Subscriber('/field/new_models', Models, modelsCallback)#(types, zones, models, typesPub, zonesPub, modelPub))
@@ -523,6 +523,10 @@ def main():
             typesPub.publish(main.types)
             zonesPub.publish(main.zones)
             modelPub.publish(main.models)
+
+#            for model in main.models.models:
+#                if(model.name == "robot"):
+#                    print model.pose
 
             time.sleep(.25)
 
