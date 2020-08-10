@@ -184,6 +184,7 @@ class Config:
 
         self.imodels=[
             # the fist model is the robot
+            #type_name color zone_name name
             ['robot',self.white, 'field', 'robot', '', initialPose],
             ['ball',self.red,'field','red1', 'body',initialPose],
             ['ball',self.red,'field','red2', 'body',initialPose],

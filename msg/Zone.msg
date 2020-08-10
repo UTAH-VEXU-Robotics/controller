@@ -1,8 +1,4 @@
-string name #unique identifier
-string type #any type
-std_msgs/ColorRGBA color #color or other specification
-std_msgs/Float32 x1
-std_msgs/Float32 y1
-std_msgs/Float32 x2
-std_msgs/Float32 y2
-Models models #the models inside of the zone
+string name #zone name
+string typeName #any type
+string[] modelNames #the name of the models inside the zone
+geometry_msgs/Pose pose #pose of where the zone is at
