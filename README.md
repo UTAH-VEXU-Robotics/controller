@@ -4,10 +4,8 @@
 acts as the driver of the robot
 and can execute strategies in
 certain scenarios
-
 gets data from tracking and
 navigation packages
-
 sends data to the actions
 package
 
