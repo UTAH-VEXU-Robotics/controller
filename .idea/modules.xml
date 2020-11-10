@@ -3,7 +3,6 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/driver.iml" filepath="$PROJECT_DIR$/.idea/driver.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/driver1.iml" filepath="$PROJECT_DIR$/.idea/driver1.iml" />
       <module fileurl="file://$PROJECT_DIR$/../../devel/include/.idea/include.iml" filepath="$PROJECT_DIR$/../../devel/include/.idea/include.iml" />
     </modules>
   </component>

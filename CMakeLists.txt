@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(driver)
+project(strategy)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -26,7 +26,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
 ## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
-catkin_python_setup()
+#catkin_python_setup()
 
 ################################################
 ## Declare ROS messages, services and actions ##
@@ -53,22 +53,22 @@ catkin_python_setup()
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
- add_message_files(
-   FILES
-   Type.msg
-   Types.msg
-   Model.msg
-   Models.msg
-   Zone.msg
-   Zones.msg
-   ChangeUpGoal.msg
-   ChangeUpGoals.msg
-   ChangeUpField.msg
-   Action.msg
-   Actions.msg
-   Task.msg
-   Tasks.msg
- )
+# add_message_files(
+#   FILES
+#   Type.msg
+#   Types.msg
+#   Model.msg
+#   Models.msg
+#   Zone.msg
+#   Zones.msg
+#   ChangeUpGoal.msg
+#   ChangeUpGoals.msg
+#   ChangeUpField.msg
+#   Action.msg
+#   Actions.msg
+#   Task.msg
+#   Tasks.msg
+# )
 ## Generate services in the 'srv' folder
 # add_service_files(
 #   FILES
@@ -84,10 +84,10 @@ catkin_python_setup()
 # )
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages(
-  DEPENDENCIES
-  std_msgs geometry_msgs # Or other packages containing msgs
-)
+#generate_messages(
+#  DEPENDENCIES
+#  std_msgs geometry_msgs # Or other packages containing msgs
+#)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -176,12 +176,12 @@ include_directories(
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
 catkin_install_python(PROGRAMS
-  scripts/displayModels.py
-  scripts/logicModels.py
-  scripts/fakeGazebo.py
-  scripts/models.py
-  scripts/costModels.py
-  scripts/basicDriver.py
+#  scripts/displayModels.py
+#  scripts/logicModels.py
+#  scripts/fakeGazebo.py
+#  scripts/models.py
+#  scripts/costModels.py
+#  scripts/basicDriver.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
@@ -226,6 +226,6 @@ catkin_install_python(PROGRAMS
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_executable(auto_runner src/autoRunner.cpp)
-target_link_libraries(auto_runner ${catkin_LIBRARIES})
-add_dependencies(auto_runner driver_generate_messages_cpp)
+#add_executable(auto_runner src/autoRunner.cpp)
+#target_link_libraries(auto_runner ${catkin_LIBRARIES})
+#add_dependencies(auto_runner driver_generate_messages_cpp)

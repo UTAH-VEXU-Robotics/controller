@@ -1,6 +1,5 @@
 <launch>
 
-
     <arg name="x_start" default="1.0"/>
     <arg name="y_start" default="-1.0"/>
     <arg name="z_start" default="0.11"/>
